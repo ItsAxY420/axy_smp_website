@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Recipe & Enchant Viewer</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #2c3e50; color: #ecf0f1; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: #34495e; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #f1c40f; }
+        .tabs { display: flex; justify-content: center; margin-bottom: 20px; gap: 10px; }
+        button { padding: 12px 24px; cursor: pointer; border: none; border-radius: 5px; background: #95a5a6; color: white; font-weight: bold; }
+        button.active { background: #f1c40f; color: #2c3e50; }
+        
+        /* Recipe Styles */
+        select { width: 100%; padding: 15px; font-size: 16px; margin-bottom: 20px; border-radius: 8px; }
+        .grid { display: grid; grid-template-columns: repeat(3, 85px); gap: 8px; justify-content: center; margin: 20px auto; }
+        .cell { width: 85px; height: 85px; border: 2px solid #7f8c8d; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #95a5a6; border-radius: 4px; font-size: 24px; }
+        .cell.empty { background: #5d6d7e; border-style: dashed; }
+        .cell-label { font-size: 8px; margin-top: 5px; color: #2c3e50; font-weight: bold; }
+        .result-box { margin-top: 30px; text-align: center; font-weight: bold; border: 3px solid #f1c40f; padding: 15px; background: #2c3e50; border-radius: 8px; }
+        
+        /* Enchantment Styles */
+        #section-enchants { display: none; height: 600px; overflow-y: auto; padding: 10px; }
+        .search-bar { width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #7f8c8d; background: #ecf0f1; }
+        .ench-category { margin-bottom: 20px; }
+        .ench-category h2 { color: #f1c40f; border-bottom: 1px solid #f1c40f; padding-bottom: 5px; }
+        .ench-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ench-item { background: #455a64; padding: 8px; border-radius: 4px; font-size: 0.85em; }
+        .ench-name { color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Server Data Viewer</h1>
+        <div class="tabs">
+            <button id="btn-recipes" class="active" onclick="show('recipes')">Recipes</button>
+            <button id="btn-enchants" onclick="show('enchants')">All Enchants</button>
+        </div>
+
+        <div id="section-recipes">
+            <select id="recipeSelect" onchange="renderRecipe()">
+                <option value="">-- Select a Recipe --</option>
+                <!-- <option value="leather_quiver">Leather Quiver</option>
+                <option value="iron_quiver">Iron Quiver</option>
+                <option value="gold_quiver">Gold Quiver</option>
+                <option value="diamond_quiver">Diamond Quiver</option>
+                <option value="netherite_quiver">Netherite Quiver (Smithing)</option> -->
+                <option value="ultimate_sword">Ultimate Sword</option>
+                <option value="mysterious_bow">Mysterious Bow</option>
+                <option value="super_potion">Super Health Potion</option>
+                <option value="golden_head">Golden Head</option>
+                <option value="xp_tome">XP Tome</option>
+                <option value="netherite_upgrade">Netherite Upgrade Template</option>
+                <option value="custom_player_head">Custom Player Head (Shapeless)</option>
+            </select>
+            <div id="display-area"></div>
+        </div>
+
+        <div id="section-enchants">
+            <input type="text" id="enchSearch" class="search-bar" placeholder="Search enchantments..." onkeyup="filterEnchants()">
+            <div id="ench-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const itemIcons = { 'Leather': '👜', 'String': '🧵', 'Iron Ingot': '🧱', 'Leather Quiver': '🎒', 'Gold Ingot': '📀', 'Iron Quiver': '🎒', 'Diamond': '💎', 'Gold Quiver': '🎒', 'Netherite Ingot': '⬛', 'Nether Star': '⭐', 'Ench. Golden Apple': '🍎', 'Totem of Undying': '👼', 'Golden Head': '👤', 'Netherite Block': '⬛', 'Beacon': '🗼', 'Potion': '🧪', 'Player Head': '👤', 'Lapis Lazuli': '🔷', 'Book': '📖', 'Netherite Scrap': '💿', 'Bow': '🏹' };
+
+        const recipes = {
+            leather_quiver: { type: 'shaped', grid: ['Leather', 'Leather', 'Leather', 'Leather', 'String', 'Leather', 'Leather', 'Leather', 'Leather'], result: 'Leather Quiver' },
+            iron_quiver: { type: 'shaped', grid: ['Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Leather Quiver', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot'], result: 'Iron Quiver' },
+            gold_quiver: { type: 'shaped', grid: ['Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Iron Quiver', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot'], result: 'Gold Quiver' },
+            diamond_quiver: { type: 'shaped', grid: ['Diamond', 'Diamond', 'Diamond', 'Diamond', 'Gold Quiver', 'Diamond', 'Diamond', 'Diamond', 'Diamond'], result: 'Diamond Quiver' },
+            netherite_quiver: { type: 'smithing', base: 'Diamond Quiver', addition: 'Netherite Ingot', result: 'Netherite Quiver' },
+            ultimate_sword: { type: 'shaped', grid: ['Nether Star', 'Ench. Golden Apple', 'Nether Star', 'Totem of Undying', 'Golden Head', 'Totem of Undying', 'Netherite Block', 'Beacon', 'Netherite Block'], result: 'Ultimate Sword' },
+            mysterious_bow: { type: 'shaped', grid: ['', 'String', 'String', 'String', '', 'String', '', 'String', 'String'], result: 'Mysterious Bow' },
+            super_potion: { type: 'shaped', grid: ['', 'Gold Ingot', '', 'Gold Ingot', 'Potion', 'Gold Ingot', '', 'Gold Ingot', ''], result: 'Super Health Potion' },
+            golden_head: { type: 'shaped', grid: ['Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Player Head', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot'], result: 'Golden Head' },
+            xp_tome: { type: 'shaped', grid: ['Lapis Lazuli', 'Gold Ingot', 'Lapis Lazuli', 'Gold Ingot', 'Book', 'Gold Ingot', 'Lapis Lazuli', 'Gold Ingot', 'Lapis Lazuli'], result: 'XP Tome' },
+            netherite_upgrade: { type: 'shaped', grid: ['Netherite Scrap', 'Diamond', 'Netherite Scrap', 'Gold Ingot', 'Diamond', 'Gold Ingot', 'Gold Ingot', 'Netherite Ingot', 'Gold Ingot'], result: 'Netherite Upgrade Template' },
+            custom_player_head: { type: 'shapeless', ingredients: ['Player Head', 'Gold Ingot (x3)'], result: 'Custom Player Head' }
+        };
+
+        const allEnchants = {
+            "Armor": [{n: "Cold Steel", l: "1-3", d: "Freeze attackers."}, {n: "Darkness Cloak", l: "1-3", d: "Invisibility in low light."}, {n: "Dragon Heart", l: "1-3", d: "Boosts health/strength."}, {n: "Elemental Protection", l: "1-4", d: "Resistance to elements."}, {n: "Fire Shield", l: "1-3", d: "Fire damage to attackers."}, {n: "Flame Walker", l: "1-2", d: "Walk on fire."}, {n: "Hardened", l: "1-3", d: "Armor boost."}, {n: "Ice Shield", l: "1-3", d: "Slow attackers."}, {n: "Jumping", l: "1-3", d: "High jump."}, {n: "Kamikadze", l: "1-1", d: "Explode on death."}, {n: "Lightweight", l: "1-3", d: "Speed boost."}, {n: "Night Vision", l: "1-1", d: "Permanent night vision."}, {n: "Rebound", l: "1-3", d: "Knockback attackers."}, {n: "Regrowth", l: "1-3", d: "Health regen."}, {n: "Saturation", l: "1-2", d: "Hunger regen."}, {n: "Speedy", l: "1-3", d: "Move faster."}, {n: "Stopping Force", l: "1-3", d: "Halt movement."}, {n: "Water Breathing", l: "1-1", d: "Breathe underwater."}],
+            "Bows": [{n: "Bomber", l: "1-3", d: "Arrows explode."}, {n: "Confusing Arrows", l: "1-3", d: "Confusion on hit."}, {n: "Darkness Arrows", l: "1-3", d: "Blind target."}, {n: "Dragonfire Arrows", l: "1-3", d: "Fire damage."}, {n: "Electrified Arrows", l: "1-3", d: "Lightning effect."}, {n: "Ender Bow", l: "1-1", d: "Teleport arrow."}, {n: "Explosive Arrows", l: "1-3", d: "Large explosions."}, {n: "Flare", l: "1-3", d: "Illuminate."}, {n: "Ghast", l: "1-3", d: "Shoot fireballs."}, {n: "Hover", l: "1-3", d: "Levitate target."}, {n: "Lingering", l: "1-3", d: "Lingering cloud."}, {n: "Poisoned Arrows", l: "1-3", d: "Poison effect."}, {n: "Sniper", l: "1-3", d: "Increased accuracy."}, {n: "Vampiric Arrows", l: "1-3", d: "Drain life."}, {n: "Withered Arrows", l: "1-3", d: "Wither target."}],
+            "Fishing": [{n: "Auto Reel", l: "1-1", d: "Auto catch."}, {n: "Curse of Drowned", l: "1-1", d: "Harder fishing."}, {n: "Double Catch", l: "1-3", d: "Catch two items."}, {n: "River Master", l: "1-3", d: "Better loot."}, {n: "Seasoned Angler", l: "1-3", d: "Faster bite."}, {n: "Survivalist", l: "1-3", d: "Extra XP."}],
+            "Tools": [{n: "Blast Mining", l: "1-5", d: "Explosive mining."}, {n: "Glassbreaker", l: "1-1", d: "Break glass easily."}, {n: "Haste", l: "1-3", d: "Mining speed."}, {n: "Lucky Miner", l: "1-3", d: "Fortune effect."}, {n: "Replanter", l: "1-1", d: "Auto replant."}, {n: "Silk Chest", l: "1-1", d: "Mine chests."}, {n: "Silk Spawner", l: "1-1", d: "Mine spawners."}, {n: "Smelter", l: "1-1", d: "Auto smelt ores."}, {n: "Telekinesis", l: "1-1", d: "Items to inventory."}, {n: "Treefeller", l: "1-3", d: "Chop whole trees."}, {n: "Tunnel", l: "1-3", d: "Dig tunnels."}, {n: "Veinminer", l: "1-3", d: "Mine ore veins."}],
+            "Universal": [{n: "Curse of Breaking", l: "1-1", d: "Break faster."}, {n: "Curse of Fragility", l: "1-1", d: "Lower durability."}, {n: "Curse of Mediocrity", l: "1-1", d: "Stats drop."}, {n: "Curse of Misfortune", l: "1-1", d: "Bad luck."}, {n: "Restore", l: "1-1", d: "Repair over time."}, {n: "Soulbound", l: "1-1", d: "Keep on death."}],
+            "Weapons": [{n: "Bane of Netherspawn", l: "1-5", d: "Extra nether damage."}, {n: "Blindness", l: "1-3", d: "Blind enemy."}, {n: "Confusion", l: "1-3", d: "Confuse enemy."}, {n: "Cure", l: "1-1", d: "Remove effects."}, {n: "Curse of Death", l: "1-1", d: "Insta-kill chance."}, {n: "Cutter", l: "1-3", d: "Damage boost."}, {n: "Decapitator", l: "1-1", d: "Head drops."}, {n: "Double Strike", l: "1-5", d: "Hit twice."}, {n: "Exhaust", l: "1-3", d: "Tire enemy."}, {n: "Ice Aspect", l: "1-2", d: "Slow target."}, {n: "Infernus", l: "1-3", d: "Fire damage."}, {n: "Nimble", l: "1-3", d: "Attack speed."}, {n: "Paralyze", l: "1-3", d: "Stun foe."}, {n: "Rage", l: "1-5", d: "Damage boost."}, {n: "Rocket", l: "1-3", d: "Launch foe."}, {n: "Swiper", l: "1-3", d: "Fast swipe."}, {n: "Temper", l: "1-5", d: "Strength boost."}, {n: "Thrifty", l: "1-3", d: "Save ammo."}, {n: "Thunder", l: "1-3", d: "Lightning strike."}, {n: "Vampire", l: "1-5", d: "Drain HP."}, {n: "Venom", l: "1-3", d: "Poison target."}, {n: "Village Defender", l: "1-3", d: "Village buff."}, {n: "Wisdom", l: "1-3", d: "More XP."}, {n: "Wither", l: "1-3", d: "Wither effect."}]
+        };
+
+        function show(s) {
+            document.getElementById('section-recipes').style.display = (s === 'recipes') ? 'block' : 'none';
+            document.getElementById('section-enchants').style.display = (s === 'enchants') ? 'block' : 'none';
+            document.getElementById('btn-recipes').className = (s === 'recipes') ? 'active' : '';
+            document.getElementById('btn-enchants').className = (s === 'enchants') ? 'active' : '';
+        }
+
+        function filterEnchants() {
+            const term = document.getElementById('enchSearch').value.toLowerCase();
+            document.querySelectorAll('.ench-item').forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none';
+            });
+        }
+
+        function renderRecipe() {
+            const val = document.getElementById('recipeSelect').value;
+            const display = document.getElementById('display-area');
+            const r = recipes[val];
+            if (!r) { display.innerHTML = ''; return; }
+
+            let html = '';
+            if (r.type === 'shaped') {
+                html = '<div class="grid">' + r.grid.map(i => {
+                    const icon = itemIcons[i] || '❓';
+                    return `<div class="cell">${icon}<div class="cell-label">${i}</div></div>`;
+                }).join('') + '</div>';
+            } else if (r.type === 'smithing') {
+                html = `<div style="text-align:center; padding:20px;"><strong>Base:</strong> ${r.base} <br>+<br> <strong>Addition:</strong> ${r.addition}</div>`;
+            } else {
+                html = `<div style="text-align:center; padding:20px;"><div class="shapeless-badge">SHAPELESS RECIPE</div><br><strong>Ingredients (Anywhere):</strong><br> ${r.ingredients.join(', ')}</div>`;
+            }
+            html += `<div class="result-box">Result: ${r.result}</div>`;
+            display.innerHTML = html;
+        }
+
+        const enchDiv = document.getElementById('ench-content');
+        for (const [cat, items] of Object.entries(allEnchants)) {
+            enchDiv.innerHTML += `<div class="ench-category"><h2>${cat}</h2><div class="ench-list">${items.map(i => `<div class="ench-item"><span class="ench-name">${i.n} [${i.l}]</span><br>${i.d}</div>`).join('')}</div></div>`;
+        }
+    </script>
+</body>
+</html>
