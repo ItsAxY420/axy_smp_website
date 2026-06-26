@@ -19,8 +19,8 @@
         .cell-label { font-size: 8px; margin-top: 5px; color: #2c3e50; font-weight: bold; }
         .result-box { margin-top: 30px; text-align: center; font-weight: bold; border: 3px solid #f1c40f; padding: 15px; background: #2c3e50; border-radius: 8px; }
         
-        /* Enchantment Styles */
-        #section-enchants { display: none; height: 600px; overflow-y: auto; padding: 10px; }
+        /* Enchantment & Commands Styles */
+        #section-enchants, #section-commands { display: none; height: 600px; overflow-y: auto; padding: 10px; }
         .search-bar { width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #7f8c8d; background: #ecf0f1; }
         .ench-category { margin-bottom: 20px; }
         .ench-category h2 { color: #f1c40f; border-bottom: 1px solid #f1c40f; padding-bottom: 5px; }
@@ -31,20 +31,20 @@
 </head>
 <body>
     <div class="container">
-        <h1>Server Data Viewer</h1>
+        <h1>MaxMC Servers Website</h1>
+        <h1>To Connect Try</h1>
+        <h1>212.150.193.66:25565</h1>
+        <h1>212.150.193.66:25566</h1>
+        <h1>212.150.193.66:25567</h1>
         <div class="tabs">
             <button id="btn-recipes" class="active" onclick="show('recipes')">Recipes</button>
             <button id="btn-enchants" onclick="show('enchants')">All Enchants</button>
+            <button id="btn-commands" onclick="show('commands')">Commands</button>
         </div>
 
         <div id="section-recipes">
             <select id="recipeSelect" onchange="renderRecipe()">
                 <option value="">-- Select a Recipe --</option>
-                <!-- <option value="leather_quiver">Leather Quiver</option>
-                <option value="iron_quiver">Iron Quiver</option>
-                <option value="gold_quiver">Gold Quiver</option>
-                <option value="diamond_quiver">Diamond Quiver</option>
-                <option value="netherite_quiver">Netherite Quiver (Smithing)</option> -->
                 <option value="ultimate_sword">Ultimate Sword</option>
                 <option value="mysterious_bow">Mysterious Bow</option>
                 <option value="super_potion">Super Health Potion</option>
@@ -60,17 +60,17 @@
             <input type="text" id="enchSearch" class="search-bar" placeholder="Search enchantments..." onkeyup="filterEnchants()">
             <div id="ench-content"></div>
         </div>
+
+        <div id="section-commands">
+            <input type="text" id="cmdSearch" class="search-bar" placeholder="Search commands..." onkeyup="filterCommands()">
+            <div id="cmd-content" class="ench-list"></div>
+        </div>
     </div>
 
     <script>
         const itemIcons = { 'Leather': '👜', 'String': '🧵', 'Iron Ingot': '🧱', 'Leather Quiver': '🎒', 'Gold Ingot': '📀', 'Iron Quiver': '🎒', 'Diamond': '💎', 'Gold Quiver': '🎒', 'Netherite Ingot': '⬛', 'Nether Star': '⭐', 'Ench. Golden Apple': '🍎', 'Totem of Undying': '👼', 'Golden Head': '👤', 'Netherite Block': '⬛', 'Beacon': '🗼', 'Potion': '🧪', 'Player Head': '👤', 'Lapis Lazuli': '🔷', 'Book': '📖', 'Netherite Scrap': '💿', 'Bow': '🏹' };
 
         const recipes = {
-            leather_quiver: { type: 'shaped', grid: ['Leather', 'Leather', 'Leather', 'Leather', 'String', 'Leather', 'Leather', 'Leather', 'Leather'], result: 'Leather Quiver' },
-            iron_quiver: { type: 'shaped', grid: ['Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Leather Quiver', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot', 'Iron Ingot'], result: 'Iron Quiver' },
-            gold_quiver: { type: 'shaped', grid: ['Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Iron Quiver', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot', 'Gold Ingot'], result: 'Gold Quiver' },
-            diamond_quiver: { type: 'shaped', grid: ['Diamond', 'Diamond', 'Diamond', 'Diamond', 'Gold Quiver', 'Diamond', 'Diamond', 'Diamond', 'Diamond'], result: 'Diamond Quiver' },
-            netherite_quiver: { type: 'smithing', base: 'Diamond Quiver', addition: 'Netherite Ingot', result: 'Netherite Quiver' },
             ultimate_sword: { type: 'shaped', grid: ['Nether Star', 'Ench. Golden Apple', 'Nether Star', 'Totem of Undying', 'Golden Head', 'Totem of Undying', 'Netherite Block', 'Beacon', 'Netherite Block'], result: 'Ultimate Sword' },
             mysterious_bow: { type: 'shaped', grid: ['', 'String', 'String', 'String', '', 'String', '', 'String', 'String'], result: 'Mysterious Bow' },
             super_potion: { type: 'shaped', grid: ['', 'Gold Ingot', '', 'Gold Ingot', 'Potion', 'Gold Ingot', '', 'Gold Ingot', ''], result: 'Super Health Potion' },
@@ -89,16 +89,37 @@
             "Weapons": [{n: "Bane of Netherspawn", l: "1-5", d: "Extra nether damage."}, {n: "Blindness", l: "1-3", d: "Blind enemy."}, {n: "Confusion", l: "1-3", d: "Confuse enemy."}, {n: "Cure", l: "1-1", d: "Remove effects."}, {n: "Curse of Death", l: "1-1", d: "Insta-kill chance."}, {n: "Cutter", l: "1-3", d: "Damage boost."}, {n: "Decapitator", l: "1-1", d: "Head drops."}, {n: "Double Strike", l: "1-5", d: "Hit twice."}, {n: "Exhaust", l: "1-3", d: "Tire enemy."}, {n: "Ice Aspect", l: "1-2", d: "Slow target."}, {n: "Infernus", l: "1-3", d: "Fire damage."}, {n: "Nimble", l: "1-3", d: "Attack speed."}, {n: "Paralyze", l: "1-3", d: "Stun foe."}, {n: "Rage", l: "1-5", d: "Damage boost."}, {n: "Rocket", l: "1-3", d: "Launch foe."}, {n: "Swiper", l: "1-3", d: "Fast swipe."}, {n: "Temper", l: "1-5", d: "Strength boost."}, {n: "Thrifty", l: "1-3", d: "Save ammo."}, {n: "Thunder", l: "1-3", d: "Lightning strike."}, {n: "Vampire", l: "1-5", d: "Drain HP."}, {n: "Venom", l: "1-3", d: "Poison target."}, {n: "Village Defender", l: "1-3", d: "Village buff."}, {n: "Wisdom", l: "1-3", d: "More XP."}, {n: "Wither", l: "1-3", d: "Wither effect."}]
         };
 
+        const commands = [
+            { name: "/discord", desc: "Join Discord" },
+            { name: "/website", desc: "Visit website" },
+            { name: "/rules", desc: "Show server rules" },
+            { name: "/home", desc: "Teleport back to the main base" },
+            { name: "/cave", desc: "Teleport to the cave in the overworld" },
+            { name: "/nether", desc: "Teleport to the nether area" },
+            { name: "/farm", desc: "Teleport to the farm area" },
+            { name: "/fortress_nether", desc: "Teleport to the nether fortress" },
+            { name: "/cave_nether", desc: "Teleport to the nether cave" }
+        ];
+
         function show(s) {
             document.getElementById('section-recipes').style.display = (s === 'recipes') ? 'block' : 'none';
             document.getElementById('section-enchants').style.display = (s === 'enchants') ? 'block' : 'none';
+            document.getElementById('section-commands').style.display = (s === 'commands') ? 'block' : 'none';
             document.getElementById('btn-recipes').className = (s === 'recipes') ? 'active' : '';
             document.getElementById('btn-enchants').className = (s === 'enchants') ? 'active' : '';
+            document.getElementById('btn-commands').className = (s === 'commands') ? 'active' : '';
         }
 
         function filterEnchants() {
             const term = document.getElementById('enchSearch').value.toLowerCase();
-            document.querySelectorAll('.ench-item').forEach(item => {
+            document.querySelectorAll('#ench-content .ench-item').forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none';
+            });
+        }
+
+        function filterCommands() {
+            const term = document.getElementById('cmdSearch').value.toLowerCase();
+            document.querySelectorAll('#cmd-content .ench-item').forEach(item => {
                 item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none';
             });
         }
@@ -128,6 +149,11 @@
         for (const [cat, items] of Object.entries(allEnchants)) {
             enchDiv.innerHTML += `<div class="ench-category"><h2>${cat}</h2><div class="ench-list">${items.map(i => `<div class="ench-item"><span class="ench-name">${i.n} [${i.l}]</span><br>${i.d}</div>`).join('')}</div></div>`;
         }
+
+        const cmdDiv = document.getElementById('cmd-content');
+        commands.forEach(c => {
+            cmdDiv.innerHTML += `<div class="ench-item"><span class="ench-name">${c.name}</span><br>${c.desc}</div>`;
+        });
     </script>
 </body>
 </html>
